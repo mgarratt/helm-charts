@@ -1,0 +1,53 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/mgarratt/docker-images/proton-bridge
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  annotations: {}
+  smtp:
+    port: 25
+  imap:
+    port: 143
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 2Gi
+  storageClassName: ""
+
+bridge:
+  host: "127.0.0.1"
+  smtpPort: 1025
+  imapPort: 1143
+  mode: noninteractive
+
+container:
+  smtpPort: 25
+  imapPort: 143
+
+existingSecret: ""
+secretName: ""
+
+# Additional literal env vars.
+extraEnv: []
+
+podAnnotations: {}
+podLabels: {}
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
