@@ -26,7 +26,7 @@ Helm charts I maintain for my home cluster.
 After the release workflow has published `index.yaml` to `gh-pages`:
 
 ```bash
-helm repo add mgarratt-home https://mgarratt.github.io/helm-charts
+helm repo add mgarratt-home https://mgarratt.uk/helm-charts
 helm repo update
 helm search repo mgarratt-home
 ```
