@@ -94,6 +94,9 @@ Common overrides:
 - `bridge.host`, `bridge.smtpPort`, `bridge.imapPort`
 - `container.smtpPort`, `container.imapPort`
 - `container.enablePrivilegedPortBinding`
+- `podSecurityContext.fsGroup`
+- `containerSecurityContext`
+- `volumePermissions.enabled`
 - `existingSecret`
 
 To bind directly on container ports `25` and `143`, enable privileged port binding:
@@ -103,4 +106,21 @@ container:
   smtpPort: 25
   imapPort: 143
   enablePrivilegedPortBinding: true
+```
+
+## Troubleshooting Startup Permission Errors
+
+If the container cannot write under `/home/bridge` at startup, set a pod `fsGroup` so Kubernetes adjusts volume group ownership:
+
+```yaml
+podSecurityContext:
+  fsGroup: 1000
+```
+
+If your storage backend still needs explicit ownership fixes, enable the permissions init container:
+
+```yaml
+volumePermissions:
+  enabled: true
+  chown: "1000:1000"
 ```
