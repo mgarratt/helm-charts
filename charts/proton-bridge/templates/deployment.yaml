@@ -22,6 +22,13 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- $volumePermissions := .Values.volumePermissions | default dict }}
+      {{- $volumePermissionsEnabled := (get $volumePermissions "enabled" | default false) }}
+      {{- $vpImage := (get $volumePermissions "image" | default dict) }}
+      {{- $vpSecurityContext := (get $volumePermissions "securityContext") }}
+      {{- $vpMountPath := (get $volumePermissions "mountPath" | default "/home/bridge") }}
+      {{- $vpChown := (get $volumePermissions "chown" | default "1000:1000") }}
+      {{- $vpChmod := (get $volumePermissions "chmod" | default "u+rwX,g+rwX") }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -30,12 +37,12 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if and .Values.persistence.enabled .Values.volumePermissions.enabled }}
+      {{- if and .Values.persistence.enabled $volumePermissionsEnabled }}
       initContainers:
         - name: volume-permissions
-          image: "{{ .Values.volumePermissions.image.repository }}:{{ .Values.volumePermissions.image.tag }}"
-          imagePullPolicy: {{ .Values.volumePermissions.image.pullPolicy }}
-          {{- with .Values.volumePermissions.securityContext }}
+          image: "{{ (get $vpImage "repository" | default "busybox") }}:{{ (get $vpImage "tag" | default "1.37.0") }}"
+          imagePullPolicy: {{ (get $vpImage "pullPolicy" | default "IfNotPresent") }}
+          {{- with $vpSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -43,11 +50,11 @@ spec:
             - /bin/sh
             - -ec
             - >-
-              chown -R {{ .Values.volumePermissions.chown }} {{ .Values.volumePermissions.mountPath }}
-              && chmod -R {{ .Values.volumePermissions.chmod }} {{ .Values.volumePermissions.mountPath }}
+              chown -R {{ $vpChown }} {{ $vpMountPath }}
+              && chmod -R {{ $vpChmod }} {{ $vpMountPath }}
           volumeMounts:
             - name: bridge-data
-              mountPath: {{ .Values.volumePermissions.mountPath }}
+              mountPath: {{ $vpMountPath }}
       {{- end }}
       containers:
         - name: proton-bridge
