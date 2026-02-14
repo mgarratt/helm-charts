@@ -3,6 +3,16 @@ entries:
   proton-bridge:
   - apiVersion: v2
     appVersion: 3.22.0
+    created: "2026-02-14T20:02:36.027086154Z"
+    description: Proton Mail Bridge deployment for in-cluster SMTP/IMAP access
+    digest: 1969ccd872ea088b5b46b7e1f2d97c9ca97c48f40ba355d6cbc6bac32cfceaf2
+    name: proton-bridge
+    type: application
+    urls:
+    - https://github.com/mgarratt/helm-charts/releases/download/proton-bridge-0.1.5/proton-bridge-0.1.5.tgz
+    version: 0.1.5
+  - apiVersion: v2
+    appVersion: 3.22.0
     created: "2026-02-14T17:16:02.52455563Z"
     description: Proton Mail Bridge deployment for in-cluster SMTP/IMAP access
     digest: 2883950641fddc4c6fb1bfd25f02296ebf216a136b804aa19270cf57502851a7
@@ -21,4 +31,4 @@ entries:
     urls:
     - https://github.com/mgarratt/helm-charts/releases/download/proton-bridge-0.1.1/proton-bridge-0.1.1.tgz
     version: 0.1.1
-generated: "2026-02-14T17:16:02.524564326Z"
+generated: "2026-02-14T20:02:36.027098618Z"
