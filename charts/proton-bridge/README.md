@@ -5,7 +5,7 @@ Deploys `ghcr.io/mgarratt/docker-images/proton-bridge` as a single-replica Helm 
 ## Defaults
 
 - Service type: `ClusterIP`
-- Service ports: SMTP `25`, IMAP `143`
+- Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1025`/`1143` by default)
 - Image tag: `latest`
 - PVC: enabled, `ReadWriteOnce`, `2Gi`
 
@@ -35,4 +35,15 @@ Common overrides:
 - `service.type`
 - `persistence.existingClaim`
 - `bridge.host`, `bridge.smtpPort`, `bridge.imapPort`
+- `container.smtpPort`, `container.imapPort`
+- `container.enablePrivilegedPortBinding`
 - `existingSecret`
+
+To bind directly on container ports `25` and `143`, enable privileged port binding:
+
+```yaml
+container:
+  smtpPort: 25
+  imapPort: 143
+  enablePrivilegedPortBinding: true
+```

@@ -30,6 +30,12 @@ spec:
         - name: proton-bridge
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.container.enablePrivilegedPortBinding }}
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+          {{- end }}
           env:
             - name: BRIDGE_MODE
               value: {{ .Values.bridge.mode | quote }}

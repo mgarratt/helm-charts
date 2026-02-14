@@ -15,6 +15,15 @@ Helm charts I maintain for my home cluster.
 - `charts/<chart>/` contains a chart definition
 - `scripts/` contains local/CI helpers
 
+## CI Testing
+
+PR workflow (`.github/workflows/pr.yml`) runs:
+
+- Layer 1 (static): `helm lint` + rendered manifest schema validation via `kubeconform`
+- Layer 2 (integration): `ct lint` + `ct install` in a disposable `kind` cluster
+
+Recommended branch policy: require pull requests for `main` and require the `pr` workflow to pass before merge.
+
 ## Local Lint
 
 ```bash
