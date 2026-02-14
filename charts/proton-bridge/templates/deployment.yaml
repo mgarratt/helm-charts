@@ -22,19 +22,57 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- $volumePermissions := .Values.volumePermissions | default dict }}
+      {{- $volumePermissionsEnabled := (get $volumePermissions "enabled" | default false) }}
+      {{- $vpImage := (get $volumePermissions "image" | default dict) }}
+      {{- $vpSecurityContext := (get $volumePermissions "securityContext") }}
+      {{- $vpMountPath := (get $volumePermissions "mountPath" | default "/home/bridge") }}
+      {{- $vpChown := (get $volumePermissions "chown" | default "1000:1000") }}
+      {{- $vpChmod := (get $volumePermissions "chmod" | default "u+rwX,g+rwX") }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.persistence.enabled $volumePermissionsEnabled }}
+      initContainers:
+        - name: volume-permissions
+          image: "{{ (get $vpImage "repository" | default "busybox") }}:{{ (get $vpImage "tag" | default "1.37.0") }}"
+          imagePullPolicy: {{ (get $vpImage "pullPolicy" | default "IfNotPresent") }}
+          {{- with $vpSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/sh
+            - -ec
+            - >-
+              chown -R {{ $vpChown }} {{ $vpMountPath }}
+              && chmod -R {{ $vpChmod }} {{ $vpMountPath }}
+          volumeMounts:
+            - name: bridge-data
+              mountPath: {{ $vpMountPath }}
       {{- end }}
       containers:
         - name: proton-bridge
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- $containerSecurityContext := deepCopy (.Values.containerSecurityContext | default dict) }}
           {{- if .Values.container.enablePrivilegedPortBinding }}
+          {{- $capabilities := get $containerSecurityContext "capabilities" | default dict }}
+          {{- $add := get $capabilities "add" | default (list) }}
+          {{- if not (has "NET_BIND_SERVICE" $add) }}
+          {{- $add = append $add "NET_BIND_SERVICE" }}
+          {{- end }}
+          {{- $capabilities = mergeOverwrite $capabilities (dict "add" $add) }}
+          {{- $containerSecurityContext = mergeOverwrite $containerSecurityContext (dict "capabilities" $capabilities) }}
+          {{- end }}
+          {{- if $containerSecurityContext }}
           securityContext:
-            capabilities:
-              add:
-                - NET_BIND_SERVICE
+            {{- toYaml $containerSecurityContext | nindent 12 }}
           {{- end }}
           env:
             - name: BRIDGE_MODE
