@@ -2,6 +2,63 @@
 
 Deploys `ghcr.io/mgarratt/docker-images/proton-bridge` as a single-replica Helm release for in-cluster SMTP/IMAP access.
 
+## Login Workflow
+
+Proton Bridge can only run a single process against its state directory. To log in interactively, scale the main Deployment to `0`, run a temporary CLI pod with `BRIDGE_MODE=cli`, then scale back up.
+
+This workflow expects `persistence.enabled=true` (default) so `/home/bridge` is backed by the chart PVC and login data persists.
+
+```bash
+NAMESPACE=default
+RELEASE=proton-bridge
+DEPLOYMENT="$(kubectl -n "$NAMESPACE" get deploy \
+  -l app.kubernetes.io/instance="$RELEASE",app.kubernetes.io/name=proton-bridge \
+  -o jsonpath='{.items[0].metadata.name}')"
+IMAGE="$(kubectl -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')"
+SECRET_NAME="$(kubectl -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].envFrom[0].secretRef.name}')"
+PVC_NAME="$(kubectl -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.volumes[?(@.name=="bridge-data")].persistentVolumeClaim.claimName}')"
+
+# stop the main bridge process
+kubectl -n "$NAMESPACE" scale deploy/"$DEPLOYMENT" --replicas=0
+kubectl -n "$NAMESPACE" rollout status deploy/"$DEPLOYMENT"
+
+# start a temporary interactive bridge process in CLI mode
+kubectl -n "$NAMESPACE" run "${RELEASE}-login" \
+  --rm -it --restart=Never \
+  --image "$IMAGE" \
+  --overrides "$(cat <<JSON
+{
+  \"apiVersion\": \"v1\",
+  \"spec\": {
+    \"containers\": [
+      {
+        \"name\": \"proton-bridge\",
+        \"image\": \"$IMAGE\",
+        \"env\": [{\"name\":\"BRIDGE_MODE\",\"value\":\"cli\"}],
+        \"envFrom\": [{\"secretRef\":{\"name\":\"$SECRET_NAME\"}}],
+        \"stdin\": true,
+        \"tty\": true,
+        \"volumeMounts\": [{\"name\":\"bridge-data\",\"mountPath\":\"/home/bridge\"}]
+      }
+    ],
+    \"volumes\": [
+      {
+        \"name\": \"bridge-data\",
+        \"persistentVolumeClaim\": {
+          \"claimName\": \"$PVC_NAME\"
+        }
+      }
+    ]
+  }
+}
+JSON
+)"
+
+# after login and exit from the CLI pod, start normal service mode again
+kubectl -n "$NAMESPACE" scale deploy/"$DEPLOYMENT" --replicas=1
+kubectl -n "$NAMESPACE" rollout status deploy/"$DEPLOYMENT"
+```
+
 ## Defaults
 
 - Service type: `ClusterIP`

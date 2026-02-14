@@ -6,3 +6,7 @@
 
 3. Optional test from inside cluster:
    kubectl run -it --rm smtp-test --image=busybox:1.36 --restart=Never -- nc -vz {{ include "proton-bridge.fullname" . }} {{ .Values.service.smtp.port }}
+
+4. Interactive login workflow (required for first auth):
+   Scale deployment to zero, run a temporary pod with BRIDGE_MODE=cli against the same PVC, then scale back up.
+   See charts/proton-bridge/README.md#login-workflow
