@@ -1,0 +1,10 @@
+chart-dirs:
+  - charts
+excluded-charts:
+  - template
+validate-maintainers: false
+check-version-increment: true
+validate-chart-schema: true
+validate-yaml: true
+helm-extra-args: --timeout 10m
+upgrade: true
