@@ -98,6 +98,8 @@ Common overrides:
 - `volumePermissions.enabled`
 - `existingSecret`
 
+If `bridge.host` is local (`127.0.0.1`, `localhost`, `::1`) and `container.*Port` matches `bridge.*Port`, the chart automatically shifts container ports by `+1` to avoid bridge/socat bind conflicts during installs and upgrades.
+
 To bind directly on container ports `25` and `143`, enable privileged port binding:
 
 ```yaml
