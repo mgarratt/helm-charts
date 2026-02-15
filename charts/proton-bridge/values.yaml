@@ -32,8 +32,8 @@ bridge:
   mode: noninteractive
 
 container:
-  smtpPort: 1025
-  imapPort: 1143
+  smtpPort: 1026
+  imapPort: 1144
   # Set true to add NET_BIND_SERVICE capability so non-root process can bind <1024 (e.g. 25/143).
   enablePrivilegedPortBinding: false
 

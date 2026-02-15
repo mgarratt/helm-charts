@@ -62,7 +62,7 @@ kubectl -n "$NAMESPACE" rollout status deploy/"$DEPLOYMENT"
 ## Defaults
 
 - Service type: `ClusterIP`
-- Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1025`/`1143` by default)
+- Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1026`/`1144` by default)
 - Image tag: `latest`
 - PVC: enabled, `ReadWriteOnce`, `2Gi`
 
