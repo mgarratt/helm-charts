@@ -94,7 +94,6 @@ Common overrides:
 - `bridge.host`, `bridge.smtpPort`, `bridge.imapPort`
 - `container.smtpPort`, `container.imapPort`
 - `container.enablePrivilegedPortBinding`
-- `podSecurityContext.fsGroup`
 - `containerSecurityContext`
 - `volumePermissions.enabled`
 - `existingSecret`
@@ -110,11 +109,17 @@ container:
 
 ## Troubleshooting Startup Permission Errors
 
-If the container cannot write under `/home/bridge` at startup, set a pod `fsGroup` so Kubernetes adjusts volume group ownership:
+By default, the chart runs the container as uid/gid `1000:1000` and sets pod `fsGroup: 1000`, matching the current image defaults.
+
+If you need different ownership semantics for your storage class, override the security contexts:
 
 ```yaml
 podSecurityContext:
-  fsGroup: 1000
+  fsGroup: 1001
+
+containerSecurityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
 ```
 
 If your storage backend still needs explicit ownership fixes, enable the permissions init container:
