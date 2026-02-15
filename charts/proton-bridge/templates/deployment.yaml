@@ -29,6 +29,17 @@ spec:
       {{- $vpMountPath := (get $volumePermissions "mountPath" | default "/home/bridge") }}
       {{- $vpChown := (get $volumePermissions "chown" | default "1000:1000") }}
       {{- $vpChmod := (get $volumePermissions "chmod" | default "u+rwX,g+rwX") }}
+      {{- $localBridgeHost := or (eq .Values.bridge.host "127.0.0.1") (eq .Values.bridge.host "localhost") (eq .Values.bridge.host "::1") }}
+      {{- $bridgeSmtpPort := int .Values.bridge.smtpPort }}
+      {{- $bridgeImapPort := int .Values.bridge.imapPort }}
+      {{- $containerSmtpPort := int .Values.container.smtpPort }}
+      {{- $containerImapPort := int .Values.container.imapPort }}
+      {{- if and $localBridgeHost (eq $bridgeSmtpPort $containerSmtpPort) }}
+      {{- $containerSmtpPort = add $bridgeSmtpPort 1 }}
+      {{- end }}
+      {{- if and $localBridgeHost (eq $bridgeImapPort $containerImapPort) }}
+      {{- $containerImapPort = add $bridgeImapPort 1 }}
+      {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -85,10 +96,10 @@ spec:
                 name: {{ include "proton-bridge.secretName" . }}
           ports:
             - name: smtp
-              containerPort: {{ .Values.container.smtpPort }}
+              containerPort: {{ $containerSmtpPort }}
               protocol: TCP
             - name: imap
-              containerPort: {{ .Values.container.imapPort }}
+              containerPort: {{ $containerImapPort }}
               protocol: TCP
           {{- if .Values.persistence.enabled }}
           volumeMounts:

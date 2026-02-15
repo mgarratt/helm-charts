@@ -62,7 +62,7 @@ kubectl -n "$NAMESPACE" rollout status deploy/"$DEPLOYMENT"
 ## Defaults
 
 - Service type: `ClusterIP`
-- Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1025`/`1143` by default)
+- Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1026`/`1144` by default)
 - Image tag: `latest`
 - PVC: enabled, `ReadWriteOnce`, `2Gi`
 
@@ -97,6 +97,8 @@ Common overrides:
 - `containerSecurityContext`
 - `volumePermissions.enabled`
 - `existingSecret`
+
+If `bridge.host` is local (`127.0.0.1`, `localhost`, `::1`) and `container.*Port` matches `bridge.*Port`, the chart automatically shifts container ports by `+1` to avoid bridge/socat bind conflicts during installs and upgrades.
 
 To bind directly on container ports `25` and `143`, enable privileged port binding:
 
