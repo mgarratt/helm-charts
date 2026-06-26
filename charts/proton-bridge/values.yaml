@@ -3,7 +3,16 @@ replicaCount: 1
 image:
   repository: ghcr.io/mgarratt/docker-images/proton-bridge
   tag: latest
+  # Pin by content digest (e.g. sha256:...). When set, the image is referenced as
+  # repository:tag@digest, so the tag stays readable but the digest is immutable
+  # (avoids stale pulls from a mirror that cached a re-pushed mutable tag).
+  digest: ""
   pullPolicy: IfNotPresent
+
+# Deployment update strategy. Recreate by default: bridge uses a single
+# ReadWriteOnce volume, so a rolling update would deadlock on volume multi-attach.
+strategy:
+  type: Recreate
 
 imagePullSecrets: []
 nameOverride: ""
@@ -29,13 +38,24 @@ bridge:
   host: "127.0.0.1"
   smtpPort: 1025
   imapPort: 1143
-  mode: noninteractive
+  # grpc serves mail plus the gRPC API the metrics exporter scrapes.
+  # Use noninteractive for a leaner run without metrics, or cli for first login.
+  mode: grpc
 
 container:
   smtpPort: 1026
   imapPort: 1144
+  metricsPort: 9154
   # Set true to add NET_BIND_SERVICE capability so non-root process can bind <1024 (e.g. 25/143).
   enablePrivilegedPortBinding: false
+
+# Prometheus Operator PodMonitor scraping the bridge metrics exporter.
+podMonitor:
+  enabled: false
+  interval: 30s
+  path: /metrics
+  # Extra labels on the PodMonitor (e.g. to match a Prometheus ruleSelector).
+  labels: {}
 
 # Pod-level security context defaults for the bridge image user (uid:gid 1000:1000).
 podSecurityContext:
