@@ -6,6 +6,10 @@ metadata:
     {{- include "proton-bridge.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "proton-bridge.selectorLabels" . | nindent 6 }}
@@ -69,7 +73,7 @@ spec:
       {{- end }}
       containers:
         - name: proton-bridge
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}{{ with .Values.image.digest }}@{{ . }}{{ end }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- $containerSecurityContext := deepCopy (.Values.containerSecurityContext | default dict) }}
           {{- if .Values.container.enablePrivilegedPortBinding }}
@@ -100,6 +104,9 @@ spec:
               protocol: TCP
             - name: imap
               containerPort: {{ $containerImapPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ int .Values.container.metricsPort }}
               protocol: TCP
           {{- if .Values.persistence.enabled }}
           volumeMounts:

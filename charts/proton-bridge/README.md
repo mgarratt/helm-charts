@@ -64,17 +64,32 @@ kubectl -n "$NAMESPACE" rollout status deploy/"$DEPLOYMENT"
 - Service type: `ClusterIP`
 - Service ports: SMTP `25`, IMAP `143` (mapped to container ports `1026`/`1144` by default)
 - Image tag: `latest`
+- Bridge mode: `grpc` (serves mail plus the gRPC API the metrics exporter scrapes)
+- Metrics: exporter on container port `9154`; `PodMonitor` off by default
+- Update strategy: `Recreate` (single `ReadWriteOnce` volume)
 - PVC: enabled, `ReadWriteOnce`, `2Gi`
+
+## Metrics
+
+The image runs a Prometheus exporter (container port `container.metricsPort`,
+default `9154`) when `bridge.mode=grpc` (the default). Enable scraping with the
+Prometheus Operator:
+
+```yaml
+podMonitor:
+  enabled: true
+```
 
 ## Required Runtime Configuration
 
-The image requires the following environment variables:
+The image requires the following environment variables (all set by the chart):
 
 - `PROTON_BRIDGE_SMTP_PORT`
 - `PROTON_BRIDGE_IMAP_PORT`
 - `PROTON_BRIDGE_HOST`
 - `CONTAINER_SMTP_PORT`
 - `CONTAINER_IMAP_PORT`
+- `CONTAINER_METRICS_PORT`
 
 By default, the chart creates a Secret with values from `values.yaml`. Set `existingSecret` to reuse your own Secret.
 
@@ -88,11 +103,14 @@ helm upgrade --install proton-bridge ./charts/proton-bridge
 
 Common overrides:
 
-- `image.tag`
+- `image.tag`, `image.digest` (pin by digest: referenced as `repo:tag@digest`)
+- `bridge.mode` (`grpc` default, `noninteractive`, or `cli`)
+- `strategy` (defaults to `Recreate`)
+- `podMonitor.enabled`, `podMonitor.interval`, `podMonitor.labels`
 - `service.type`
 - `persistence.existingClaim`
 - `bridge.host`, `bridge.smtpPort`, `bridge.imapPort`
-- `container.smtpPort`, `container.imapPort`
+- `container.smtpPort`, `container.imapPort`, `container.metricsPort`
 - `container.enablePrivilegedPortBinding`
 - `containerSecurityContext`
 - `volumePermissions.enabled`
