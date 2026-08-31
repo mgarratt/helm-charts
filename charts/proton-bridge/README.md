@@ -93,6 +93,24 @@ The image requires the following environment variables (all set by the chart):
 
 By default, the chart creates a Secret with values from `values.yaml`. Set `existingSecret` to reuse your own Secret.
 
+## Certificate (STARTTLS)
+
+The image's `smtp-relay` service (mgarratt/docker-images#8) terminates STARTTLS
+at the pod boundary and requires a certificate/key on disk. To mount one:
+
+```yaml
+certificate:
+  secretName: proton-bridge-tls
+```
+
+`secretName` must name a Kubernetes TLS-type Secret (keys `tls.crt`/`tls.key`,
+e.g. one managed by cert-manager). Mounted at `certificate.mountPath` (default
+`/etc/proton-bridge/tls`), it lines up with the image's own defaults for
+`CONTAINER_SMTP_TLS_CERT_FILE`/`CONTAINER_SMTP_TLS_KEY_FILE`, so no other
+overrides are needed. Leave `secretName` empty (the default) and the chart
+renders exactly as before — the image now fails fast without a certificate, so
+this stays unset until a secret exists to mount.
+
 ## Install
 
 ```bash
@@ -115,6 +133,7 @@ Common overrides:
 - `containerSecurityContext`
 - `volumePermissions.enabled`
 - `existingSecret`
+- `certificate.secretName`, `certificate.mountPath`, `certificate.certFile`, `certificate.keyFile`
 
 If `bridge.host` is local (`127.0.0.1`, `localhost`, `::1`) and `container.*Port` matches `bridge.*Port`, the chart automatically shifts container ports by `+1` to avoid bridge/socat bind conflicts during installs and upgrades.
 

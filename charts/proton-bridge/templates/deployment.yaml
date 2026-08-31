@@ -92,6 +92,12 @@ spec:
           env:
             - name: BRIDGE_MODE
               value: {{ .Values.bridge.mode | quote }}
+            {{- if .Values.certificate.secretName }}
+            - name: CONTAINER_SMTP_TLS_CERT_FILE
+              value: {{ .Values.certificate.certFile | quote }}
+            - name: CONTAINER_SMTP_TLS_KEY_FILE
+              value: {{ .Values.certificate.keyFile | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -108,18 +114,32 @@ spec:
             - name: metrics
               containerPort: {{ int .Values.container.metricsPort }}
               protocol: TCP
-          {{- if .Values.persistence.enabled }}
+          {{- if or .Values.persistence.enabled .Values.certificate.secretName }}
           volumeMounts:
+            {{- if .Values.persistence.enabled }}
             - name: bridge-data
               mountPath: /home/bridge
+            {{- end }}
+            {{- if .Values.certificate.secretName }}
+            - name: bridge-tls
+              mountPath: {{ .Values.certificate.mountPath }}
+              readOnly: true
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- if .Values.persistence.enabled }}
+      {{- if or .Values.persistence.enabled .Values.certificate.secretName }}
       volumes:
+        {{- if .Values.persistence.enabled }}
         - name: bridge-data
           persistentVolumeClaim:
             claimName: {{ include "proton-bridge.pvcName" . }}
+        {{- end }}
+        {{- if .Values.certificate.secretName }}
+        - name: bridge-tls
+          secret:
+            secretName: {{ .Values.certificate.secretName }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
