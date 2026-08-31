@@ -85,6 +85,17 @@ volumePermissions:
 existingSecret: ""
 secretName: ""
 
+# Optional certificate for the smtp-relay service's STARTTLS (mgarratt/docker-images#8).
+# Set secretName to mount a Kubernetes TLS-type Secret (keys tls.crt/tls.key) into
+# the bridge container. certFile/keyFile default to the image's own defaults, so
+# mounting such a secret at mountPath needs no other overrides. Leave secretName
+# empty (the default) to render exactly as before.
+certificate:
+  secretName: ""
+  mountPath: /etc/proton-bridge/tls
+  certFile: /etc/proton-bridge/tls/tls.crt
+  keyFile: /etc/proton-bridge/tls/tls.key
+
 # Additional literal env vars.
 extraEnv: []
 

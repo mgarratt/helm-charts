@@ -82,7 +82,7 @@ podMonitor:
 
 ## Required Runtime Configuration
 
-The image requires the following environment variables (all set by the chart):
+The image requires the following environment variables:
 
 - `PROTON_BRIDGE_SMTP_PORT`
 - `PROTON_BRIDGE_IMAP_PORT`
@@ -90,8 +90,39 @@ The image requires the following environment variables (all set by the chart):
 - `CONTAINER_SMTP_PORT`
 - `CONTAINER_IMAP_PORT`
 - `CONTAINER_METRICS_PORT`
+- `CONTAINER_SMTP_TLS_CERT_FILE`
+- `CONTAINER_SMTP_TLS_KEY_FILE`
+
+The chart sets the first six from `values.yaml`. The last two come from the
+image's own defaults unless `certificate.secretName` is set, in which case the
+chart sets them to match the mounted certificate.
 
 By default, the chart creates a Secret with values from `values.yaml`. Set `existingSecret` to reuse your own Secret.
+
+## Certificate (STARTTLS)
+
+The image's `smtp-relay` service (mgarratt/docker-images#8) terminates STARTTLS
+at the pod boundary and requires a certificate/key on disk. To mount one:
+
+```yaml
+certificate:
+  secretName: proton-bridge-tls
+```
+
+`secretName` must name a Kubernetes TLS-type Secret (keys `tls.crt`/`tls.key`,
+e.g. one managed by cert-manager). Mounted at `certificate.mountPath` (default
+`/etc/proton-bridge/tls`), it lines up with the image's own defaults for
+`CONTAINER_SMTP_TLS_CERT_FILE`/`CONTAINER_SMTP_TLS_KEY_FILE`, so no other
+overrides are needed. Leave `secretName` empty (the default) and the chart
+renders exactly as before.
+
+That is safe only on an image built before `mgarratt/docker-images@2a98d13`. From
+that revision onward the image requires a certificate on disk and fails fast
+without one, so any release running such an image **must** set
+`certificate.secretName`. Neither the `latest` tag nor a version tag such as
+`3.25.0` tells you which image you have — both move forward as new images
+publish — so if you need to stay on an image before `2a98d13`, pin `image.digest`
+rather than a tag.
 
 ## Install
 
@@ -115,6 +146,7 @@ Common overrides:
 - `containerSecurityContext`
 - `volumePermissions.enabled`
 - `existingSecret`
+- `certificate.secretName`, `certificate.mountPath`, `certificate.certFile`, `certificate.keyFile`
 
 If `bridge.host` is local (`127.0.0.1`, `localhost`, `::1`) and `container.*Port` matches `bridge.*Port`, the chart automatically shifts container ports by `+1` to avoid bridge/socat bind conflicts during installs and upgrades.
 
