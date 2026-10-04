@@ -5,9 +5,13 @@
 # `.github/workflows/release.yml` runs helm/chart-releaser-action on every push
 # to main, publishing every charts/<dir>/ that has a Chart.yaml (`_template`
 # included, as `template`) to the gh-pages branch, usually within a minute.
-# Nothing to run. `verify` waits up to ~4.5 min (ccpi kills a step at 5) for
-# every chart's Chart.yaml version at the merged sha to appear under that
-# chart's own entry in gh-pages' index.yaml. It proves the versions were
+# Nothing to run. `verify` waits up to ~4.5 min (the runner kills a step at 5)
+# for the Chart.yaml version at the merged sha of each chart changed between
+# the previous checkout HEAD (ORIG_HEAD, set when the runner advances the
+# checkout by `git merge`/`pull`; HEAD~1 if absent) and HEAD to appear under
+# that chart's own entry in gh-pages' index.yaml. Unchanged charts are not
+# checked: chart-releaser only publishes changed ones. An empty list (only
+# deletions, or ORIG_HEAD not as expected) passes. It proves the versions were
 # published; it does not prove the workflow run for this sha succeeded
 # (skip_existing is set, so an already-present version passes), nor that the
 # Pages site is serving the new index yet.
@@ -16,10 +20,16 @@ paths  = ["charts/*/**"]
 kind   = "reconciles"
 verify = '''
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+base=$(git rev-parse -q --verify ORIG_HEAD || git rev-parse HEAD~1)
+charts=
+for d in $(git diff --name-only "$base" HEAD -- charts | cut -d/ -f1,2 | sort -u); do
+  [ -f "$d/Chart.yaml" ] && charts="$charts $d/Chart.yaml"
+done
+[ -n "$charts" ] || exit 0
 for _ in $(seq 27); do
   idx=$(gh api "repos/$repo/contents/index.yaml?ref=gh-pages" --jq .content 2>/dev/null | base64 -d)
   ok=1
-  for f in charts/*/Chart.yaml; do
+  for f in $charts; do
     n=$(sed -n 's/^name: *//p' "$f" | tr -d "\"'")
     v=$(sed -n 's/^version: *//p' "$f" | tr -d "\"'")
     printf '%s\n' "$idx" | awk -v n="$n" -v v="$v" '
