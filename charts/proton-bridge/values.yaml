@@ -73,7 +73,7 @@ volumePermissions:
   enabled: false
   image:
     repository: busybox
-    tag: "1.37.0"
+    tag: "1.38.0"
     pullPolicy: IfNotPresent
   securityContext:
     runAsUser: 0
