@@ -1,0 +1,31 @@
+# How this repository's merged code becomes live (schema in mgarratt/skills
+# ADR 0023). Publishing only: this describes what the release workflow
+# pushes, nothing about who consumes it.
+
+# `.github/workflows/release.yml` runs helm/chart-releaser-action on every push
+# to main, publishing each chart under charts/ (except `_template`, which is not
+# a release) to the gh-pages branch, usually within a minute. Nothing to run.
+# `verify` waits up to ~4.5 min (ccpi kills a step at 5) for each chart's
+# Chart.yaml version at the merged sha to appear in gh-pages' index.yaml.
+# It proves the version was published; it does not prove the workflow run for
+# this sha succeeded (a version already present passes), nor that the Pages
+# site is serving the new index yet.
+[[deploy]]
+paths  = ["charts/proton-bridge/**"]
+kind   = "reconciles"
+verify = '''
+repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+want=$(sed -n 's/^version: *//p' charts/proton-bridge/Chart.yaml | tr -d "\"'")
+for _ in $(seq 27); do
+  gh api "repos/$repo/contents/index.yaml?ref=gh-pages" --jq .content 2>/dev/null |
+    base64 -d | grep -q "^    version: \"\?$want\"\?\$" && exit 0
+  sleep 10
+done
+exit 1
+'''
+
+# Everything else (the template chart, scripts, docs, CI config) is not
+# published by the release workflow.
+[[deploy]]
+paths = ["**"]
+kind  = "none"
